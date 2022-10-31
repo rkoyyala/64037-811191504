@@ -1,0 +1,126 @@
+---
+title: "64037 Individual Assignment - 1"
+author: "Rohith Chandra"
+date: "2022-10-31"
+output: word_document
+---
+
+## Part A
+
+# A1. Main purpose of Regularization
+Regularization refers to techniques that are used to calibrate machine learning models in order to minimize the adjusted loss function and prevent over fitting or under fitting. Using Regularization, we can fit our machine learning model appropriately on a given test set and hence reduce the errors in it. Regularization is a technique in machine learning that tries to achieve the generalization of the model. It means that our model works well not only with training or test data, but also with the data it'll receive in the future. Regularized linear regression is used to improve stability, reduce the impact of collinearity, and improve computational efficiency and generalization.Also, it controls the coefficient values either by decreasing the values or compltely dropping the variables while minimizing the loss. When the variables are dropped the model's complexity is reduced and over fitting can be reduced. 
+
+# A2. Loss function in a predictive model 
+
+The loss function calculates the difference between the model’s output with that of expected
+output of the model or a variable. If the difference is larger, then the loss function penalizes
+the model in order to make the difference smaller as the objective is to make the difference
+smaller.
+
+Loss function regression models
+
+MSE - Mean Squared Error is the average of the squared differences between the actual and the predicted values. The smaller the mean squared error, the closer you are to finding the line of best fit. For a data point Yi and its predicted value Yi, where n is the total number of data points in the dataset.  
+
+MAE- Mean Absolute Error is one of regression models' most simple yet robust loss functions. It is an ideal option in such cases because it does not consider the direction of the outliers that are unrealistically high positive or negative values. As the name suggests, MAE takes the average sum of the absolute differences between the actual and the predicted values. For a data point xi and its predicted value yi, n being the total number of data points in the dataset.  
+
+Loss functions classification models
+
+Binary cross entropy - BCE compares each of the predicted probabilities to the actual class output, which can be either 0 or 1. It then calculates the score that penalizes the probabilities based on the distance from the expected value. That means how close or far from the actual value. This is the most common loss function for classification problems with two classes. If the divergence of the predicted probability from the actual label increases, the cross-entropy loss increases. By this, predicting a probability of .011 when the actual observation label is 1 would result in a high loss value. In an ideal situation, a "perfect" model would have a log loss of 0
+
+Categorical Cross Entropy - CCE is a loss function that is used in multi-class classification tasks. These are tasks where an example can only belong to one of many possible categories, and the model must decide which. Formally, it is designed to quantify the difference between two probability distributions. One requirement when the categorical cross entropy loss function is used is that the labels should be one-hot encoded. This way, only one element will be non-zero, as other elements in the vector would be multiplied by zero. 
+
+# A3. Classification models with many parameters
+
+No, we cannot trust the model. When the data set is too small , there is a possibility that
+model may follow the data too closely , learning too little patterns. And it may learn the noise
+, which is not required , as well. Noise is stochastic and that is difficult to predict. Hence it
+performs very well on the training data set and may perform very badly on the test data as
+it hasn’t seen the new data and the required patterns are not learnt well.
+
+
+# A4. What is the role of the lambda parameter in regularized linear models such as Lasso or Ridge regression models?
+We need to make a note that while increasing the lamda value, one needs to make sure that
+the model which is otherwise optimal or over fit would not under fit the model as lambda is
+goes too small. Because, regularization penalizes the variable coefficients in the model to avoid over fitting we need to use the penalty parameter or lambda. In Lasso, when we increase the lambda value it drops variables
+that are not significant to the model and also reduces the value of the coefficients of the
+remaining variables in the model, while minimizing the overall loss function. This way the
+model will get rid of complexity by reducing the number of features in the data set,
+eliminating the over fitting scenario. On the contrary, ridge model only decreases the
+coefficient value while keeping all the variables in the model.
+
+## Part B
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# Libraries
+library(ISLR)
+library(caret)
+library(dplyr)
+library(glmnet)
+# Attaching the carsets data set to solve the regression problem
+attach(Carseats)
+summary(Carseats)
+```
+
+```{r}
+Carseats_Filtered <- Carseats %>% select("Sales", "Price", "Advertising","Population","Age","Income","Education")
+x <- Carseats_Filtered
+y <- Carseats %>% select("Sales") %>% as.matrix()
+
+```
+
+```{r}
+# Converting the data into a matrix
+Carseats_Sales <- Carseats_Filtered$Sales
+Carseats_Other <- data.matrix(Carseats_Filtered[, c(-1)])
+# Preprocess and summarize the data
+preProc <- preProcess(Carseats_Other, method=c("center", "scale"))
+Carseats_Scaled <- predict(preProc,Carseats_Other)
+summary(Carseats_Scaled)
+```
+
+
+# B1. Lasso regression to predict sales
+
+```{r}
+Lasso_model <- cv.glmnet(Carseats_Scaled,Carseats_Sales , alpha = 1)
+Lambda_Best <- Lasso_model$lambda.min
+Lambda_Best
+
+#Testing MSE by lambda value
+plot(Lasso_model) 
+```
+
+The result shows that the optimal lambda value is 0.004305309.
+
+# B2. The coefficient for the price
+```{r}
+Lambda_Best<- glmnet(x,y, alpha = 1, lambda = Lambda_Best)
+coef(Lambda_Best)
+```
+
+The coefficient of the price attribute with the best lambda value is -1.35384596.
+
+# B3. Finding the attruibutes if lambda is set to 0.01 and looking at the changes in the value 
+```{r}
+Lambda_Best1 <- glmnet(x, y, alpha = 1, lambda = 0.01)
+coef(Lambda_Best1)
+Lambda_Best2 <- glmnet(x, y, alpha = 1, lambda = 0.1)
+coef(Lambda_Best2)
+```
+It is clear that with Lambda = 0.01 the variables are remaining but when we change it to 0.1 population and education are removed. So, when the Lambda increases the variables will drop. 
+
+# B4. Build an elastic-net model with alpha set to 0.6
+```{r}
+el_net = glmnet(x, y, alpha = 0.6)
+plot(el_net, xvar = "lambda")
+summary(el_net)
+print(el_net)
+```
+Out of all these, the variance is 37.38 in the sales and when we set the alpha value to 0.6 and then the best lambda value is 0.00654.
+
+
+
